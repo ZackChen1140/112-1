@@ -21,15 +21,14 @@ function O = medianfilter(I, filter_size)
     [m, n] = size(I);
     if(m >= filter_size && n >= filter_size)
         padding_size = floor(filter_size/2);
-        Ip = padarray(I, [padding_size, padding_size], 0);
+        Ip = padarray(im2double(I), [padding_size, padding_size], 0);
         O = zeros(m,n);
         for i = 1 : m
             for j = 1 : n
                 targetPixels = Ip(i : (i + filter_size - 1), j : (j + filter_size - 1));
-                Ip(i + floor(filter_size/2), j + floor(filter_size/2)) = median(targetPixels(:));
+                O(i, j) = median(targetPixels(:));
             end
         end
-        O = Ip(1+padding_size:end-padding_size, 1+padding_size:end-padding_size);
     end
     % your implementation here ...
 end
@@ -42,39 +41,38 @@ function O = gaussfilter(I, K, filter_size, sigma)
         for j = 1 : filter_size
             x = i - ceil(filter_size / 2);
             y = i - ceil(filter_size / 2);
-            w = exp( - (x^2 + y^2) / (2 * sigma^2));
+            w = K * exp( - (x^2 + y^2) / (2 * sigma^2));
             kernel(i, j) = w;
-            if(i >= ceil(filter_size / 2) - K && i <= ceil(filter_size / 2) + K && j >= ceil(filter_size / 2) - K && j <= ceil(filter_size / 2) + K)
-                tW = tW + w;
-            end
+            tW = tW + w;
         end
     end
     kernel = kernel/tW;
 
     [m, n] = size(I);
-    Ip = padarray(I, [K, K], 0);
+    O = zeros(m, n);
+    padding_size = floor(filter_size / 2);
+    Ip = padarray(im2double(I), [padding_size, padding_size], 0);
     for i = 1 : m
         for j = 1 : n
             sum = 0;
-            for x = 0 : 2 * K
-                for y = 0 : 2 * K
-                    if(i + x <= m + 2 * K && j + y <= n + 2 * K)
-                        sum = sum + kernel(x - K + ceil(filter_size / 2), y - K + ceil(filter_size / 2)) * Ip(i + x, j + y);
+            for x = 0 : (filter_size - 1)
+                for y = 0 : (filter_size - 1)
+                    if(i + x <= m + 2 * padding_size && j + y <= n + 2 * padding_size)
+                        sum = sum + kernel(x + 1, y + 1) * Ip(i + x, j + y);
                     end
                 end
             end
-            Ip(i + K, j + K) = sum;
+            O(i, j) = sum;
         end
     end
-    O = Ip(1 + K : end - K, 1 + K : end - K);
     % your implementation here ...
 end
 
 function O = highboostfilter (I, A, filter_size)
     % O is filtered image, I is original image
-    gImg = gaussfilter(I, 2, filter_size, 10);
-    detailMat = I - gImg;
-    O = I + A * detailMat;
+    gImg = gaussfilter(I, 1, filter_size, 10);
+    detailMat = im2double(I) - gImg;
+    O = im2double(I) + A * detailMat;
     % your implementation here ...
 end
 
